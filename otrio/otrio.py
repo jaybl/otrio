@@ -1,8 +1,14 @@
 from tkinter import *
+icon = 'resizedblob_pBr_icon.ico' #icon image
+
 window = Tk()
 window.title("Otrio")
 window.resizable(False, False) #prevents resizing the window
-window.iconbitmap(r'resizedblob_pBr_icon.ico') #icon
+window.iconbitmap(icon) #icon
+
+player = 0 #current player
+playercount = 2
+colors = ["blue", "red", "green", "purple"] #corresponding color
 
 #status bar
 class StatusBar(Frame):
@@ -23,29 +29,36 @@ class StatusBar(Frame):
 def callback():
     print("shoutouts to sean ranklin!")
 
-def pulverize(newtop : Toplevel):
+def pulverize(newtop : Toplevel, number: int):
+    global playercount
     newtop.destroy()
     start()
+    playercount = (int)(number)
+    print("PLAYERS:", playercount)
     newtop.grab_release()
     
 def command_new():
     #--new-- menu option
     newtop = Toplevel()
+    '''newtop.wm_geometry("200x100")'''
     newtop.title("New...")
+    newtop.iconbitmap(icon)
     newtop.grab_set()
     
-    msg = Message(newtop, text="i will destroy your face")
+    msg = Message(newtop, text="Choose number of players")
     msg.pack()
 
-    button = Button(newtop, text="Pulverize", command= lambda: pulverize(newtop))
+    tkvar = StringVar(window)
+    choices = {'2','3','4'}
+    tkvar.set('2')
+    choose_players = OptionMenu(newtop, tkvar, *choices)
+    choose_players.pack()
+
+    button = Button(newtop, text="Start", command= lambda: pulverize(newtop, tkvar.get()))
     button.pack()
 
 def command_exit(window: Tk):
     window.destroy()
-
-player = 0 #current player
-playercount = 2
-colors = ["blue", "red", "green", "purple"] #corresponding color
 
 #increment player
 def inc_player():
