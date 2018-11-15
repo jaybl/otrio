@@ -1,6 +1,6 @@
 # otrio
 How to run:
-Download the folder, just run otrio.py.
+Download the otrio folder, just run otrio.py.
 
 How to play:
 Tic-tac-toe but with 2-4 players and more win conditions. 
