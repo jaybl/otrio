@@ -128,7 +128,6 @@ def onclick(event):
     if tags[0] != "filled" and tags[0] != "rect":
         x,y = tags[1],tags[2]
         which = tags[0]
-        '''print(which, x,y)'''
         back.itemconfig(item, fill=colors[player])
         back.itemconfig(item, tags=("filled", which, x, y))
         if logic() ==1:
@@ -140,10 +139,7 @@ def onclick(event):
             back.bind('<Button-1>', stop_everything)
             return
         inc_player()
-        '''
-    else:
-        print(tags[0])
-        '''
+ 
 #logic
 
 def no_moves():
@@ -174,71 +170,71 @@ def logic():
                         subtags = back.gettags(var)
                         if var != item and var != i:
                             if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[2]) == x and (int)(subtags[3]) == y and back.itemcget(var, "fill") == player_color:
-                                print("MATCH")
+                                print("all3 MATCH")
                                 return 1
                 #vertical check
-                if y-1 == c: 
+                if y == 1 and c == 0 and x == r: 
                     if which == tags[1]: #same size type
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which == subtags[1] and (int)(subtags[3]) == y+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which == subtags[1] and tags[1] == subtags[1] and (int)(subtags[3]) == 2 and (int)(subtags[2]) == x and back.itemcget(var, "fill") == player_color:
+                                    print("vert MATCH")
                                     return 1
                     elif which == "mid" and tags[1] != "mid": #checking ascending types, assuming item is the middle one
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == y+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == 2 and (int)(subtags[2]) == x and back.itemcget(var, "fill") == player_color:
+                                    print("vert MATCH")
                                     return 1
                 #horizontal check
-                if x-1 == r:
+                if x == 1 and r == 0 and y == c:
                     if which == tags[1]: #same size type
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which == subtags[1] and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which == subtags[1] and tags[1] == subtags[1] and (int)(subtags[2]) == 2 and (int)(subtags[3]) == y and back.itemcget(var, "fill") == player_color:
+                                    print("horiz MATCH")
                                     return 1
                     elif which == "mid" and tags[1] != "mid": #checking ascending types, assuming item is the middle one
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[2]) == 2 and (int)(subtags[3]) == y and back.itemcget(var, "fill") == player_color:
+                                    print("horiz MATCH")
                                     return 1
                 #diagonal check, down right
-                if x==1 and y==1: 
+                if x==1 and y==1 and r==0 and c==0: 
                     if which == tags[1]: #same size type
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which == subtags[1] and (int)(subtags[3]) == y+1 and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which == subtags[1] and tags[1] == subtags[1] and (int)(subtags[3]) == 2 and (int)(subtags[2]) == 2 and back.itemcget(var, "fill") == player_color:
+                                    print("diag MATCH")
                                     return 1
                     elif which == "mid" and tags[1] != "mid": #checking ascending types, assuming item is the middle one
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == y+1 and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[2]) == 2 and (int)(subtags[3]) == 2 and (int)(subtags[2]) == r+2 and back.itemcget(var, "fill") == player_color:
+                                    print("diag MATCH")
                                     return 1
                 #diagonal check, down left
-                if x == 1 and y == 1:
+                if x == 1 and y == 1 and r==0 and c == 2:
                     if which == tags[1]: #same size type
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which == subtags[1] and (int)(subtags[3]) == y-1 and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which == subtags[1] and tags[1] == subtags[1] and (int)(subtags[3]) == 0 and (int)(subtags[2]) == 2 and back.itemcget(var, "fill") == player_color:
+                                    print("diag MATCH")
                                     return 1
                     elif which == "mid" and tags[1] != "mid": #checking ascending types, assuming item is the middle one
                         for var in filled:
                             subtags = back.gettags(var)
                             if var != item and var != i:
-                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == y-1 and (int)(subtags[2]) == x+1 and back.itemcget(var, "fill") == player_color:
-                                    print("MATCH")
+                                if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == 0 and (int)(subtags[2]) == 2 and back.itemcget(var, "fill") == player_color:
+                                    print("diag MATCH")
                                     return 1
     return 0
                         
