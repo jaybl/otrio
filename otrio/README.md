@@ -1,5 +1,5 @@
 GAME RULES:
-Tic-Tac-Toe but you can have up to 4 players rather than just 2. Win conditions are different - 3 in a row with either the same size piece or ascending type (small, mid, large).
+Tic-Tac-Toe but you can have up to 4 players rather than just 2. Win conditions are different - 3 in a row with either the same size piece or ascending type (small, mid, large) or all 3 sizes in one cell.
 
 Possible changes in the future:
 Eventually plan to have P2p connectivity for multiplayer. 
