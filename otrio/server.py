@@ -20,14 +20,21 @@ def accept_incoming_connections():
             addresses[client] = client_address
             Thread(target=handle_client, args=(client,)).start()
 
+def count_samename(name: str):
+    names = list(clients.values())
+    return names.count(name)
+
 def handle_client(client):  # Takes client socket as argument.
     """Handles a single client connection."""
     name = client.recv(BUFSIZ).decode("utf8")
     welcome = 'Welcome %s! If you ever want to quit, type {quit} to exit.' % name
     client.send(bytes(welcome, "utf8"))
-    msg = "%s has joined the chat!" % name
-    broadcast(bytes(msg, "utf8"))
     clients[client] = name
+    count = ''
+    if count_samename(name) > 1:
+        count = str(count_samename(name))
+    msg = "{0}({1}) has joined the chat!".format(name ,count)
+    broadcast(bytes(msg, "utf8"))
     while True:
         msg = client.recv(BUFSIZ)
         m = msg.decode("utf-8")
