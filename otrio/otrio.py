@@ -1,4 +1,7 @@
 from tkinter import *
+from socket import AF_INET, socket, SOCK_STREAM
+from threading import Thread
+
 icon = 'resizedblob_pBr_icon.ico' #icon image
 
 window = Tk()
@@ -89,6 +92,70 @@ status = StatusBar(window)
 status.pack(side=BOTTOM, fill=X)
 status.set("%s", "big ups liquid richard")
 
+###NETWORK SECTION (most taken from online lol)
+def receive():
+    """Handles receiving of messages."""
+    while True:
+        try:
+            msg = client_socket.recv(BUFSIZ).decode("utf8")
+            msg_list.insert(END, msg)
+        except OSError:  # Possibly client has left the chat.
+            break
+
+def send(messages_frame: Toplevel, event=None):  # event is passed by binders.
+    """Handles sending of messages."""
+    msg = my_msg.get()
+    my_msg.set("")  # Clears input field.
+    client_socket.send(bytes(msg, "utf8"))
+    if msg == "{quit}":
+        client_socket.close()
+        
+
+def on_closing(event=None):
+    """This function is to be called when the window is closed."""
+    my_msg.set("{quit}")
+    send()
+
+#chat/network stuff
+def chat_window():
+    messages_frame = Toplevel(window)
+    messages_frame.title("Chat")
+    messages_frame.iconbitmap(icon)
+    my_msg = StringVar()  # For the messages to be sent.
+    my_msg.set("Type your messages here.")
+    scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
+    # Following will contain the messages.
+    msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
+    scrollbar.pack(side=RIGHT, fill=Y)
+    msg_list.pack(side=LEFT, fill=BOTH)
+    msg_list.pack()
+    #messages_frame.pack()
+
+    entry_field = Entry(messages_frame, textvariable=my_msg)
+    entry_field.bind("<Return>", send)
+    entry_field.pack()
+    send_button = Button(messages_frame, text="Send", command= lambda: send(messages_frame))
+    send_button.pack()
+
+    window.protocol("WM_DELETE_WINDOW", on_closing)
+
+    #----Now comes the sockets part----
+    HOST = input('Enter host: ')
+    PORT = input('Enter port: ')
+    if not PORT:
+        PORT = 33000
+    else:
+        PORT = int(PORT)
+
+    BUFSIZ = 1024
+    ADDR = (HOST, PORT)
+
+    client_socket = socket(AF_INET, SOCK_STREAM)
+    client_socket.connect(ADDR)
+
+    receive_thread = Thread(target=receive)
+    receive_thread.start()
+    
 #menu
 menu = Menu(window)
 back = Canvas(window, width=640, height=480)
@@ -96,7 +163,7 @@ back = Canvas(window, width=640, height=480)
 filemenu = Menu(menu, tearoff=False)
 menu.add_cascade(label="File", menu=filemenu)
 filemenu.add_command(label="New", command=command_new)
-filemenu.add_command(label="Nut", command=callback)
+filemenu.add_command(label="Nut", command=chat_window)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command= lambda: command_exit(window))
 
@@ -288,6 +355,5 @@ def start():
 
     back.bind('<Button-1>', onclick)
 
-        
 #window display
 window.mainloop()
