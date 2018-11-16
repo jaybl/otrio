@@ -93,68 +93,101 @@ status.pack(side=BOTTOM, fill=X)
 status.set("%s", "big ups liquid richard")
 
 ###NETWORK SECTION (most taken from online lol)
+client_socket = None
+my_msg = ''
+BUFSIZ = 1024
+msg_list = []
+messages_frame = None
+entry_field = None
+
 def receive():
     """Handles receiving of messages."""
+    global client_socket, msg_list
     while True:
         try:
             msg = client_socket.recv(BUFSIZ).decode("utf8")
             msg_list.insert(END, msg)
-        except OSError:  # Possibly client has left the chat.
+        except:  # Possibly client has left the chat.
             break
 
-def send(messages_frame: Toplevel, event=None):  # event is passed by binders.
+def send(event=None):  # event is passed by binders.
     """Handles sending of messages."""
+    global my_msg, client_socket, messages_frame
     msg = my_msg.get()
     my_msg.set("")  # Clears input field.
     client_socket.send(bytes(msg, "utf8"))
     if msg == "{quit}":
+        print("quitted")
         client_socket.close()
-        
+        messages_frame.destroy()
 
 def on_closing(event=None):
+    global my_msg, messages_frame
     """This function is to be called when the window is closed."""
-    my_msg.set("{quit}")
-    send()
+    try:
+        my_msg.set("{quit}")
+        send()
+    except:
+        print("already closed")
 
+def win_on_closing(event=None):
+    global my_msg, messages_frame
+    """This function is to be called when the window is closed."""
+    try:
+        my_msg.set("{quit}")
+        send()
+    except:
+        print("already closed")
+    finally:
+        window.destroy()
+    
 #chat/network stuff
+
+def entry_callback(event):
+    entry_field.selection_range(0, END)
+    
 def chat_window():
-    messages_frame = Toplevel(window)
-    messages_frame.title("Chat")
-    messages_frame.iconbitmap(icon)
-    my_msg = StringVar()  # For the messages to be sent.
-    my_msg.set("Type your messages here.")
-    scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
-    # Following will contain the messages.
-    msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-    scrollbar.pack(side=RIGHT, fill=Y)
-    msg_list.pack(side=LEFT, fill=BOTH)
-    msg_list.pack()
-    #messages_frame.pack()
+    global client_socket, my_msg, msg_list, messages_frame, entry_field
+    if (messages_frame is None or not messages_frame.winfo_exists()):
+        messages_frame = Toplevel(window)
+        messages_frame.title("Chat")
+        messages_frame.iconbitmap(icon)
+        my_msg = StringVar()  # For the messages to be sent.
+        my_msg.set("Type your messages here.")
+        scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
+        # Following will contain the messages.
+        msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        msg_list.pack(side=LEFT, fill=BOTH)
+        msg_list.pack()
+        #messages_frame.pack()
 
-    entry_field = Entry(messages_frame, textvariable=my_msg)
-    entry_field.bind("<Return>", send)
-    entry_field.pack()
-    send_button = Button(messages_frame, text="Send", command= lambda: send(messages_frame))
-    send_button.pack()
+        entry_field = Entry(messages_frame, textvariable=my_msg)
+        entry_field.bind("<FocusIn>", entry_callback)
+        entry_field.bind("<Return>", send)
+        entry_field.pack()
+        send_button = Button(messages_frame, text="Send", command= send)
+        send_button.pack()
 
-    window.protocol("WM_DELETE_WINDOW", on_closing)
+        messages_frame.protocol("WM_DELETE_WINDOW", on_closing)
+        window.protocol("WM_DELETE_WINDOW", win_on_closing)
 
-    #----Now comes the sockets part----
-    HOST = input('Enter host: ')
-    PORT = input('Enter port: ')
-    if not PORT:
-        PORT = 33000
-    else:
-        PORT = int(PORT)
+        #----Now comes the sockets part----
+        HOST = input('Enter host: ')
+        PORT = input('Enter port: ')
+        if not PORT:
+            PORT = 33000
+        else:
+            PORT = int(PORT)
 
-    BUFSIZ = 1024
-    ADDR = (HOST, PORT)
+        ADDR = (HOST, PORT)
 
-    client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.connect(ADDR)
-
-    receive_thread = Thread(target=receive)
-    receive_thread.start()
+        
+        client_socket = socket(AF_INET, SOCK_STREAM)
+        client_socket.connect(ADDR)
+    
+        receive_thread = Thread(target=receive)
+        receive_thread.start()
     
 #menu
 menu = Menu(window)
