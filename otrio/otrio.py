@@ -30,10 +30,11 @@ def callback():
     print("shoutouts to sean ranklin!")
 
 def pulverize(newtop : Toplevel, number: int):
-    global playercount
+    global playercount, player
     newtop.destroy()
     start()
     playercount = (int)(number)
+    player = 0
     print("PLAYERS:", playercount)
     newtop.grab_release()
     
