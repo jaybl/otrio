@@ -97,8 +97,11 @@ client_socket = None
 my_msg = ''
 BUFSIZ = 1024
 msg_list = []
-messages_frame = None
-entry_field = None
+messages_frame = entry_field = ADDR = None
+host_field = port_field = None
+PORTvar = HOSTvar = StringVar()
+PORT = 0
+HOST = ""
 
 def receive():
     """Handles receiving of messages."""
@@ -140,54 +143,76 @@ def win_on_closing(event=None):
         print("already closed")
     finally:
         window.destroy()
-    
+
+
 #chat/network stuff
 
 def entry_callback(event):
     entry_field.selection_range(0, END)
-    
+
+def get_host(event):
+    global HOST, host_field
+    HOST = host_field.get()
+    host_field.destroy()
+    get_port()
+
+def get_port(event=None):
+    global ADDR, HOST, PORT, port_field
+    PORT = port_field.get()
+    if not PORT:
+        PORT = 33000
+    else:
+        PORT = int(PORT)     
+    port_field.destroy()
+    execute_the_rest()
+
 def chat_window():
-    global client_socket, my_msg, msg_list, messages_frame, entry_field
+    global client_socket, my_msg, msg_list, messages_frame, entry_field, port_field, host_field
     if (messages_frame is None or not messages_frame.winfo_exists()):
         messages_frame = Toplevel(window)
         messages_frame.title("Chat")
         messages_frame.iconbitmap(icon)
-        my_msg = StringVar()  # For the messages to be sent.
-        my_msg.set("Type your messages here.")
-        scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
-        # Following will contain the messages.
-        msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-        scrollbar.pack(side=RIGHT, fill=Y)
-        msg_list.pack(side=LEFT, fill=BOTH)
-        msg_list.pack()
-        #messages_frame.pack()
+        #Enter the login details (host/port)
+        host_field = Entry(messages_frame)
+        host_field.bind("<Return>", get_host)
+        host_field.pack()
+        port_field = Entry(messages_frame)
+        port_field.bind("<Return>", get_host)
+        port_field.pack()
 
-        entry_field = Entry(messages_frame, textvariable=my_msg)
-        entry_field.bind("<FocusIn>", entry_callback)
-        entry_field.bind("<Return>", send)
-        entry_field.pack()
-        send_button = Button(messages_frame, text="Send", command= send)
-        send_button.pack()
+def execute_the_rest():
+    global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT
+    #host/port input should disappear, and be replaced with this 
+   
+    my_msg = StringVar()  # For the messages to be sent.
+    my_msg.set("Type your messages here.")
+    scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
+    # Following will contain the messages.
+    msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
+    scrollbar.pack(side=RIGHT, fill=Y)
+    msg_list.pack(side=LEFT, fill=BOTH)
+    msg_list.pack()
 
-        messages_frame.protocol("WM_DELETE_WINDOW", on_closing)
-        window.protocol("WM_DELETE_WINDOW", win_on_closing)
+    entry_field = Entry(messages_frame, textvariable=my_msg)
+    entry_field.bind("<FocusIn>", entry_callback)
+    entry_field.bind("<Return>", send)
+    entry_field.pack()
+    send_button = Button(messages_frame, text="Send", command= send)
+    send_button.pack()
 
-        #----Now comes the sockets part----
-        HOST = input('Enter host: ')
-        PORT = input('Enter port: ')
-        if not PORT:
-            PORT = 33000
-        else:
-            PORT = int(PORT)
+    messages_frame.protocol("WM_DELETE_WINDOW", on_closing)
+    window.protocol("WM_DELETE_WINDOW", win_on_closing)
 
-        ADDR = (HOST, PORT)
+    #----Now comes the sockets part----
 
-        
-        client_socket = socket(AF_INET, SOCK_STREAM)
-        client_socket.connect(ADDR)
+    ADDR = (HOST, PORT)
     
-        receive_thread = Thread(target=receive)
-        receive_thread.start()
+    
+    client_socket = socket(AF_INET, SOCK_STREAM)
+    client_socket.connect(ADDR)
+
+    receive_thread = Thread(target=receive)
+    receive_thread.start()
     
 #menu
 menu = Menu(window)
