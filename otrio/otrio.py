@@ -61,6 +61,20 @@ def command_new():
 def command_exit(window: Tk):
     window.destroy()
 
+ruletop = None
+def rule_window():
+    global ruletop
+    if (ruletop is None or not ruletop.winfo_exists()): #check if window exists already
+        ruletop = Toplevel()
+        ruletop.title("Game Rules")
+        ruletop.iconbitmap(icon)
+        msg = Message(ruletop, text="Win Conditions:\n1.Get all 3 piece sizes in one cell\n2.Get 3 in a row with pieces of the same size\n3.Get 3 in a row with pieces of ascending size(small, medium, large)")
+        msg.pack()
+
+        button = Button(ruletop, text="Close", command= ruletop.destroy)
+        button.pack()
+        
+    
 #increment player
 def inc_player():
     global player, playercount
@@ -77,22 +91,22 @@ status.set("%s", "big ups liquid richard")
 
 #menu
 menu = Menu(window)
-
+back = Canvas(window, width=640, height=480)
 
 filemenu = Menu(menu, tearoff=False)
 menu.add_cascade(label="File", menu=filemenu)
 filemenu.add_command(label="New", command=command_new)
-filemenu.add_command(label="Open", command=callback)
+filemenu.add_command(label="Nut", command=callback)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command= lambda: command_exit(window))
 
 helpmenu = Menu(menu, tearoff=False)
 menu.add_cascade(label="Help", menu=helpmenu)
-helpmenu.add_command(label="About...", command=callback)
+helpmenu.add_command(label="Rules", command=rule_window)
 
 window.config(menu=menu)
 
-back = Canvas(window, width=640, height=480)
+
 back.pack(fill="none", expand=True, side="bottom")
 
 #the circle creator
@@ -123,18 +137,15 @@ class Square(Button):
 
 window.update()
 
-status.set("%d (%s)'s turn", player+1, (colors[player]))
+
 
 #mouse click events
-def find_closest(x,y):
-    width = back.winfo_width()/3
-    height = back.winfo_height()/3
-
 def test(event):
     print("test")
 
 def stop_everything(event):
     back.delete("all")
+    command_new()
 
 def onclick(event):
     item = back.find_closest(event.x, event.y) # for some reason item is a tuple lol
@@ -145,11 +156,11 @@ def onclick(event):
         back.itemconfig(item, fill=colors[player])
         back.itemconfig(item, tags=("filled", which, x, y))
         if logic() ==1:
-            status.set("game over, player %d (%s) wins -- click to continue", player, colors[player])
+            status.set("GAME OVER: player %d (%s) wins", player+1, colors[player])
             back.bind('<Button-1>', stop_everything)
             return
         elif logic() == 2:
-            status.set("game over, no one wins -- click to continue")
+            status.set("GAME OVER: no one wins")
             back.bind('<Button-1>', stop_everything)
             return
         inc_player()
@@ -252,11 +263,13 @@ def logic():
                                     return 1
     return 0
                         
-    print("---------------")
-    
 #drawing grid
 
 def start():
+    global player
+    back.delete("all")
+    player = 0
+    status.set("%d (%s)'s turn", player+1, (colors[player]))
     back.pack()
     shapes = []
     width = back.winfo_width()/3
@@ -278,4 +291,3 @@ def start():
         
 #window display
 window.mainloop()
-
