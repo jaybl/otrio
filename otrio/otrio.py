@@ -246,14 +246,20 @@ def destroy():
     except BrokenPipeError:
         text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
         c1.s.close()
-    messages_frame.destroy()
 
+    messages_frame.destroy()
+    window.protocol("WM_DELETE_WINDOW", window.destroy)
+
+def win_destroy():
+    destroy()
+    window.destroy()
 
 def execute_the_rest():
     global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT, b1, b2, b3, b4, b5, c1, entry
     #host/port input should disappear, and be replaced with this 
 
-    
+    messages_frame.protocol("WM_DELETE_WINDOW", destroy)
+    window.protocol("WM_DELETE_WINDOW", destroy)
 
     entry = Entry(master=messages_frame)
     entry.bind("<FocusIn>", entry_callback)
