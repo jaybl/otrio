@@ -2,10 +2,10 @@ import socket
 from threading import *
 
 
-def main():
+def main(host='127.0.0.1', port=33000):
 
     s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('127.0.0.1', 33000))
+    s.bind((host, port))
     s.listen(1)
     clients = []
     print("listening")
