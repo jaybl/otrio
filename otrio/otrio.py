@@ -1,6 +1,7 @@
 from tkinter import *
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
+from datetime import datetime
 
 icon = 'resizedblob_pBr_icon.ico' #icon image
 
@@ -93,7 +94,7 @@ status.pack(side=BOTTOM, fill=X)
 status.set("%s", "big ups liquid richard")
 
 ###NETWORK SECTION (most taken from online lol)
-client_socket = None
+client_socket = text = b1 = b2 = b3 = b4 = b5 = None
 my_msg = ''
 BUFSIZ = 1024
 msg_list = []
@@ -102,53 +103,16 @@ host_field = port_field = None
 PORTvar = HOSTvar = StringVar()
 PORT = 0
 HOST = ""
+c1 = None
 
-def receive():
-    """Handles receiving of messages."""
-    global client_socket, msg_list
-    while True:
-        try:
-            msg = client_socket.recv(BUFSIZ).decode("utf8")
-            msg_list.insert(END, msg)
-        except:  # Possibly client has left the chat.
-            break
 
-def send(event=None):  # event is passed by binders.
-    """Handles sending of messages."""
-    global my_msg, client_socket, messages_frame
-    msg = my_msg.get()
-    my_msg.set("")  # Clears input field.
-    client_socket.send(bytes(msg, "utf8"))
-    if msg == "{quit}":
-        print("quitted")
-        client_socket.close()
-        messages_frame.destroy()
-
-def on_closing(event=None):
-    global my_msg, messages_frame
-    """This function is to be called when the window is closed."""
-    try:
-        my_msg.set("{quit}")
-        send()
-    except:
-        print("already closed")
-
-def win_on_closing(event=None):
-    global my_msg, messages_frame
-    """This function is to be called when the window is closed."""
-    try:
-        my_msg.set("{quit}")
-        send()
-    except:
-        print("already closed")
-    finally:
-        window.destroy()
 
 
 #chat/network stuff
 
 def entry_callback(event):
-    entry_field.selection_range(0, END)
+    global entry
+    entry.selection_range(0, END)
 
 def get_host(event):
     global HOST, host_field
@@ -167,11 +131,14 @@ def get_port(event=None):
     execute_the_rest()
 
 def chat_window():
-    global client_socket, my_msg, msg_list, messages_frame, entry_field, port_field, host_field
+    global client_socket, my_msg, msg_list, messages_frame, entry_field, port_field, host_field, text
     if (messages_frame is None or not messages_frame.winfo_exists()):
         messages_frame = Toplevel(window)
         messages_frame.title("Chat")
         messages_frame.iconbitmap(icon)
+
+        text = Text(master=messages_frame)
+        text.pack(expand=True, fill="both")
         #Enter the login details (host/port)
         host_field = Entry(messages_frame)
         host_field.bind("<Return>", get_host)
@@ -180,40 +147,130 @@ def chat_window():
         port_field.bind("<Return>", get_host)
         port_field.pack()
 
+def buttons(frame):
+    for i in "Connect", "Create A Nickname", "Send", "Clear", "Exit":
+        b = Button(master=frame, text=i)
+        b.pack(side="left")
+        yield b
+
+class Client:
+    def __init__(self):
+        self.s = socket(AF_INET, SOCK_STREAM)
+        self.nickname = None
+
+    def connect(self):
+        global HOST, PORT, text
+        now = str(datetime.now())[:-7]
+        if self.nickname is not None:
+            try:
+                self.s.connect((HOST, PORT))
+                text.insert("insert", "({}) : Connected.\n".format(now))
+                self.s.sendall(bytes("{}".format(self.nickname).encode("utf-8")))
+                self.receive()
+            except ConnectionRefusedError:
+                text.insert("insert", "({}) : The server is not online.\n".format(now))
+        else:
+            text.insert("insert", "({}) : You must create a nickname.\n".format(now))
+
+    def receive(self):
+        while True:
+            data = str(self.s.recv(1024))[2:-1]
+            now = str(datetime.now())[:-7]
+            if len(data) == 0:
+                pass
+            else:
+                text.insert("insert", "({}) : {}\n".format(now, data))
+
+    def do_nothing(self):
+        pass
+
+    def create_nickname(self):
+        global messages_frame, b2, text, c1
+        b2.configure(command=self.do_nothing)
+        _frame = Frame(master=messages_frame)
+        _frame.pack()
+        new_entry = Entry(master=_frame)
+        new_entry.grid(row=0, column=0)
+        new_button = Button(master=_frame, text="Accept Your Nickname")
+        new_button.grid(row=1, column=0)
+
+        def nickname_command():
+            now = str(datetime.now())[:-7]
+            if new_entry.get() == "":
+                text.insert("insert", "({}) : You must write a nickname.\n".format(now))
+            else:
+                self.nickname = new_entry.get()
+                _frame.destroy()
+                text.insert("insert", "({}) : Nickname has changed to: '{}'\n".format(now, self.nickname))
+                b2.configure(command=c1.create_nickname)
+
+        new_button.configure(command=nickname_command)
+
+    def send(self):
+        global entry
+        respond = "{}: {}".format(self.nickname, str(entry.get()))
+        now = str(datetime.now())[:-7]
+        entry.delete("0", "end")
+        try:
+            self.s.sendall(bytes(respond.encode("utf-8")))
+            '''text.insert("insert", "({}) : {}\n".format(now, respond))'''
+        except BrokenPipeError:
+            text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
+            self.s.close()
+
+
+def connect():
+    global c1
+    t1 = Thread(target=c1.connect)
+    t1.start()
+
+
+def send(event=None):
+    global c1
+    t2 = Thread(target=c1.send)
+    t2.start()
+
+
+def clear():
+    text.delete("1.0", "end")
+
+
+def destroy():
+    global messages_frame, text, c1
+    respond = "{}".format(c1.nickname + " has disconnected.")
+    now = str(datetime.now())[:-7]
+    entry.delete("0", "end")
+    try:
+        c1.s.sendall(bytes(respond.encode("utf-8")))
+        text.insert("insert", "({}) : {}\n".format(now, respond))
+    except BrokenPipeError:
+        text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
+        c1.s.close()
+    messages_frame.destroy()
+
+
 def execute_the_rest():
-    global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT
+    global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT, b1, b2, b3, b4, b5, c1, entry
     #host/port input should disappear, and be replaced with this 
-   
-    my_msg = StringVar()  # For the messages to be sent.
-    my_msg.set("Type your messages here.")
-    scrollbar = Scrollbar(messages_frame)  # To navigate through past messages.
-    # Following will contain the messages.
-    msg_list = Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-    scrollbar.pack(side=RIGHT, fill=Y)
-    msg_list.pack(side=LEFT, fill=BOTH)
-    msg_list.pack()
 
-    entry_field = Entry(messages_frame, textvariable=my_msg)
-    entry_field.bind("<FocusIn>", entry_callback)
-    entry_field.bind("<Return>", send)
-    entry_field.pack()
-    send_button = Button(messages_frame, text="Send", command= send)
-    send_button.pack()
-
-    messages_frame.protocol("WM_DELETE_WINDOW", on_closing)
-    window.protocol("WM_DELETE_WINDOW", win_on_closing)
-
-    #----Now comes the sockets part----
-
-    ADDR = (HOST, PORT)
     
-    
-    client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.connect(ADDR)
 
-    receive_thread = Thread(target=receive)
-    receive_thread.start()
+    entry = Entry(master=messages_frame)
+    entry.bind("<FocusIn>", entry_callback)
+    entry.bind("<Return>", send)
+    entry.pack(expand=True, fill="x")
+
+    b1, b2, b3, b4, b5 = buttons(messages_frame)
+    c1 = Client()
     
+    b1.configure(command=connect)
+    b2.configure(command=c1.create_nickname)
+    b3.configure(command=send)
+    b4.configure(command=clear)
+    b5.configure(command=destroy)
+    t0 = Thread()
+    t0.run()
+        
 #menu
 menu = Menu(window)
 back = Canvas(window, width=640, height=480)
@@ -230,7 +287,6 @@ menu.add_cascade(label="Help", menu=helpmenu)
 helpmenu.add_command(label="Rules", command=rule_window)
 
 window.config(menu=menu)
-
 
 back.pack(fill="none", expand=True, side="bottom")
 
