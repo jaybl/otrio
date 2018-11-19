@@ -96,7 +96,7 @@ status.pack(side=BOTTOM, fill=X)
 status.set("%s", "big ups liquid richard")
 
 ###NETWORK SECTION (most taken from online lol)
-client_socket = text = b1 = b2 = b3 = b4 = b5 = None
+client_socket = text = b1 = b2 = b3 = b4 = b5 = p = None
 my_msg = ''
 BUFSIZ = 1024
 msg_list = []
@@ -238,7 +238,9 @@ def clear():
 
 
 def destroy():
-    global messages_frame, text, c1
+    global messages_frame, text, c1, p
+    if c1.nickname == None:
+        c1.nickname = ""
     respond = "{}".format(c1.nickname + " has disconnected.")
     now = str(datetime.now())[:-7]
     entry.delete("0", "end")
@@ -248,9 +250,10 @@ def destroy():
     except BrokenPipeError:
         text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
         c1.s.close()
-
-    messages_frame.destroy()
-    window.protocol("WM_DELETE_WINDOW", window.destroy)
+    finally:
+        messages_frame.destroy()
+        window.protocol("WM_DELETE_WINDOW", window.destroy)
+        p.terminate()
 
 def win_destroy():
     destroy()
@@ -280,7 +283,8 @@ def execute_the_rest():
     t0.run()
 
 def create_session(host, port):
-    p = subprocess.Popen([sys.executable, 'server.py'])
+    global p
+    p = subprocess.Popen(['python', 'server.py', host, str(port)])
     execute_the_rest()
     
 def create_host(event):
