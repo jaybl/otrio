@@ -2,6 +2,8 @@ from tkinter import *
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 from datetime import datetime
+import subprocess
+import server
 
 icon = 'resizedblob_pBr_icon.ico' #icon image
 
@@ -98,7 +100,7 @@ client_socket = text = b1 = b2 = b3 = b4 = b5 = None
 my_msg = ''
 BUFSIZ = 1024
 msg_list = []
-messages_frame = entry_field = ADDR = None
+messages_frame = entry_field = ADDR = hostinput = None
 host_field = port_field = None
 PORTvar = HOSTvar = StringVar()
 PORT = 0
@@ -276,6 +278,43 @@ def execute_the_rest():
     b5.configure(command=destroy)
     t0 = Thread()
     t0.run()
+
+def create_session(host, port):
+    p = subprocess.Popen([sys.executable, 'server.py'])
+    execute_the_rest()
+    
+def create_host(event):
+    global HOST, host_field
+    HOST = host_field.get()
+    host_field.destroy()
+    create_port()
+
+def create_port(event=None):
+    global ADDR, HOST, PORT, port_field
+    PORT = port_field.get()
+    if not PORT:
+        PORT = 33000
+    else:
+        PORT = int(PORT)     
+    port_field.destroy()
+    create_session(HOST, PORT)
+
+def host_session():
+    global messages_frame, host_field, port_field, text
+    if (messages_frame is None or not messages_frame.winfo_exists()):
+        messages_frame = Toplevel(window)
+        messages_frame.title("Chat")
+        messages_frame.iconbitmap(icon)
+
+        text = Text(master=messages_frame)
+        text.pack(expand=True, fill="both")
+        
+        host_field = Entry(messages_frame)
+        host_field.bind("<Return>", create_host)
+        host_field.pack()
+        port_field = Entry(messages_frame)
+        port_field.bind("<Return>", create_host)
+        port_field.pack()
         
 #menu
 menu = Menu(window)
@@ -284,7 +323,8 @@ back = Canvas(window, width=640, height=480)
 filemenu = Menu(menu, tearoff=False)
 menu.add_cascade(label="File", menu=filemenu)
 filemenu.add_command(label="New", command=command_new)
-filemenu.add_command(label="Nut", command=chat_window)
+filemenu.add_command(label="Join", command=chat_window)
+filemenu.add_command(label="Host", command=host_session)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command= lambda: command_exit(window))
 
@@ -323,8 +363,6 @@ class Square(Button):
         return (self.winfo_rootx(), self.winfo_rooty())
 
 window.update()
-
-
 
 #mouse click events
 def test(event):
