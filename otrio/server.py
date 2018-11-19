@@ -1,10 +1,12 @@
 import socket
+import sys
 from threading import *
 
 
 def main(host='127.0.0.1', port=33000):
 
     s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
     s.listen(1)
     clients = []
@@ -38,4 +40,10 @@ def main(host='127.0.0.1', port=33000):
         Thread(target=clienthandler, args=(c,name)).start()
 
 if __name__ == '__main__':
-    main()
+    try:
+        host = sys.argv[1]
+        port = int(sys.argv[2])
+        main()
+    except Exception as e:
+        print(e)
+        
