@@ -4,6 +4,7 @@ from threading import Thread
 from datetime import datetime
 import subprocess
 import server
+import pickle #IM PICKLE RICKKKKKK WUBBALUBBADUBDUB IM A NIHILIST MORTY PICKLE NIHILIST
 
 icon = 'resizedblob_pBr_icon.ico' #icon image
 
@@ -11,6 +12,8 @@ window = Tk()
 window.title("Otrio")
 window.resizable(False, False) #prevents resizing the window
 window.iconbitmap(icon) #icon
+
+MULTI = False #denotes whether or not game is online multi. this would require locking the game cells if it's not your turn
 
 player = 0 #current player
 playercount = 2
@@ -107,8 +110,9 @@ PORT = 0
 HOST = ""
 c1 = None
 
-
-
+#recieve multiplayer info to manipulate the board
+def recieve_data(data: tuple):
+    print(data)
 
 #chat/network stuff
 
@@ -145,6 +149,7 @@ def chat_window():
         host_field = Entry(messages_frame)
         host_field.bind("<Return>", get_host)
         host_field.pack()
+        
         port_field = Entry(messages_frame)
         port_field.bind("<Return>", get_host)
         port_field.pack()
@@ -180,8 +185,12 @@ class Client:
             now = str(datetime.now())[:-7]
             if len(data) == 0:
                 pass
+            elif data == "begin_data_transfer protocol:*~||": #recieve data of opponent move
+                data = self.s.recv(4096)
+                tags = pickle.loads(data)
+                recieve_data(tags)
             else:
-                text.insert("insert", "({}) : {}\n".format(now, data))
+                text.insert("insert", "({}) : {}\n".format(now, str(data)))
 
     def do_nothing(self):
         pass
@@ -209,7 +218,7 @@ class Client:
         new_button.configure(command=nickname_command)
 
     def send(self):
-        global entry
+        global entry, text
         respond = "{}: {}".format(self.nickname, str(entry.get()))
         now = str(datetime.now())[:-7]
         entry.delete("0", "end")
@@ -220,6 +229,21 @@ class Client:
             text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
             self.s.close()
 
+    def transfer(self, msg):
+        global text
+        try:
+            self.s.sendall(bytes(msg.encode("utf-8")))
+        except BrokenPipeError:
+            text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
+            self.s.close()
+
+    def transfer_bytes(self, msg):
+        global text
+        try:
+            self.s.send(msg)
+        except BrokenPipeError:
+            text.insert("insert", "({}) : Server has been disconnected.\n".format(now))
+            self.s.close()
 
 def connect():
     global c1
@@ -253,18 +277,19 @@ def destroy():
     finally:
         messages_frame.destroy()
         window.protocol("WM_DELETE_WINDOW", window.destroy)
-        p.terminate()
+        if p != None:
+            p.terminate()
 
 def win_destroy():
     destroy()
     window.destroy()
 
 def execute_the_rest():
-    global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT, b1, b2, b3, b4, b5, c1, entry
+    global client_socket, my_msg, msg_list, messages_frame, entry_field, HOST, PORT, b1, b2, b3, b4, b5, c1, entry, window
     #host/port input should disappear, and be replaced with this 
 
     messages_frame.protocol("WM_DELETE_WINDOW", destroy)
-    window.protocol("WM_DELETE_WINDOW", destroy)
+    window.protocol("WM_DELETE_WINDOW", win_destroy)
 
     entry = Entry(master=messages_frame)
     entry.bind("<FocusIn>", entry_callback)
@@ -363,7 +388,6 @@ class Square(Button):
         self.y = self.winfo_rooty()
 
     def getCoords(self):
-
         return (self.winfo_rootx(), self.winfo_rooty())
 
 window.update()
@@ -379,7 +403,13 @@ def stop_everything(event):
 def onclick(event):
     item = back.find_closest(event.x, event.y) # for some reason item is a tuple lol
     tags = back.gettags(item)
+   
     if tags[0] != "filled" and tags[0] != "rect":
+        global c1 #transfer data to server thru socket
+        c1.transfer("begin_data_transfer_protocol:*~||")
+        data_string = pickle.dumps(tags)
+        c1.transfer_bytes(data_string)
+        
         x,y = tags[1],tags[2]
         which = tags[0]
         back.itemconfig(item, fill=colors[player])
@@ -393,9 +423,8 @@ def onclick(event):
             back.bind('<Button-1>', stop_everything)
             return
         inc_player()
- 
-#logic
 
+#logic
 def no_moves():
     items = back.find_all()
     for i in items:
@@ -407,13 +436,11 @@ def logic():
     if no_moves() == 1:
         return 2
     filled = back.find_withtag("filled")
-    '''print(filled)'''
     #On^3 to search for matches
     for item in filled:
         which = back.gettags(item)[1]
         x,y  = (int)(back.gettags(item)[2]), (int)(back.gettags(item)[3])
         player_color = back.itemcget(item, "fill")
-        '''print("ITEM:", item, back.gettags(item), player_color)'''
         for i in filled:
             if i != item and player_color == back.itemcget(i, "fill"):
                 tags = back.gettags(i)
@@ -490,8 +517,7 @@ def logic():
                                 if which != subtags[1] and subtags[1] != tags[1] and (int)(subtags[3]) == 0 and (int)(subtags[2]) == 2 and back.itemcget(var, "fill") == player_color:
                                     print("diag MATCH")
                                     return 1
-    return 0
-                        
+    return 0                    
 #drawing grid
 
 def start():
