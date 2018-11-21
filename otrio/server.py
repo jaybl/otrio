@@ -1,17 +1,18 @@
 import socket
 import sys
 from threading import *
+import pickle
 
-
-def main(host='127.0.0.1', port=33000):
+def main(host, port):
 
     s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(socket.gethostname())
     #s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
     s.listen(1)
     clients = []
-    print("listening")
-
+    print("listening") 
+    stop = True
     def clienthandler(c, name):
         clients.append(c)
         try:
@@ -20,10 +21,19 @@ def main(host='127.0.0.1', port=33000):
                 if not data:
                     break
                 else:
-                    print(data)
-                    for client in clients:
-                        client.send(data.encode("UTF-8"))
-        except:
+                    #check if data recieved is game data or chat msg
+                    if data == "begin_data_transfer_protocol:*~||":
+                        data = c.recv(4096)
+                        tags = pickle.loads(data)
+                        for client in clients:
+                            if client != c:
+                                client.sendall(bytes("begin_data_transfer protocol:*~||".encode("UTF-8")))
+                                client.send(data)
+                    else:
+                        for client in clients:
+                            client.send(data.encode("UTF-8"))
+        except Exception as e:
+            print(e)
             clients.remove(c)
             '''
             for client in clients:
@@ -43,7 +53,8 @@ if __name__ == '__main__':
     try:
         host = sys.argv[1]
         port = int(sys.argv[2])
-        main()
+        main(host,port)
     except Exception as e:
-        print(e)
+        main('127.0.0.1',33000)
+        
         
